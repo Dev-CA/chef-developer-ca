@@ -2,12 +2,9 @@
 
 set -e
 
-cd `ls *devca`
+cd `ls -d *devca`
 
 COMMAND=$1
-shift
-
-DOMAIN=$1
 shift
 
 CA_NAME=${PWD##*/}
@@ -15,7 +12,98 @@ CA_NAME=${PWD##*/}
 if [[ "$COMMAND" == "init" ]]; then
   # generate a root certifacate
   openssl genrsa -out $CA_NAME.key 2048
-  openssl req -x509 -new -nodes -key $CA_NAME.key -days 1024 -out $CA_NAME.pem
+  openssl req -x509 -new -nodes -key $CA_NAME.key -days 1024 -out $CA_NAME.crt
+
+  touch index.txt
+  echo 1A > serial.txt
+
+  cat > $CA_NAME.cnf << EOF
+HOME            = .
+RANDFILE        = $ENV::HOME/.rnd
+
+####################################################################
+[ ca ]
+default_ca = CA_default                 # The default ca section
+
+[ CA_default ]
+default_days = 1000                     # how long to certify for
+default_crl_days = 30                   # how long before next CRL
+default_md = sha256                     # use public key default MD
+preserve = no                           # keep passed DN ordering
+
+x509_extensions = ca_extensions         # The extensions to add to the cert
+
+email_in_dn = no                        # Don't concat the email in the DN
+copy_extensions = copy                  # Required to copy SANs from CSR to cert
+
+base_dir    = .
+certificate = $CA_NAME.crt    # The CA certifcate
+private_key = $CA_NAME.key    # The CA private key
+new_certs_dir = .             # Location for new certs after signing
+database    = index.txt       # Database index file
+serial      = serial.txt      # The current serial number
+
+unique_subject  = no                    # Set to 'no' to allow creation of
+                                        # several certificates with same subject.
+
+####################################################################
+[ req ]
+default_bits        = 4096
+default_keyfile     = $CA_NAME.key
+distinguished_name  = ca_distinguished_name
+x509_extensions     = ca_extensions
+string_mask         = utf8only
+
+####################################################################
+[ ca_distinguished_name ]
+countryName                 = Country Name (2 letter code)
+countryName_default         = US
+
+stateOrProvinceName         = State or Province Name (full name)
+stateOrProvinceName_default = Maryland
+
+localityName                = Locality Name (eg, city)
+localityName_default        = Baltimore
+
+organizationName            = Organization Name (eg, company)
+organizationName_default    = Test CA, Limited
+
+organizationalUnitName      = Organizational Unit (eg, division)
+organizationalUnitName_default = Server Research Department
+
+commonName                  = Common Name (e.g. server FQDN or YOUR name)
+commonName_default          = Test CA
+
+emailAddress                = Email Address
+emailAddress_default        = test@example.com
+
+####################################################################
+[ ca_extensions ]
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid:always, issuer
+basicConstraints = critical, CA:true
+keyUsage = keyCertSign, cRLSign
+
+####################################################################
+[ signing_policy ]
+countryName = optional
+stateOrProvinceName = optional
+localityName = optional
+organizationName = optional
+organizationalUnitName = optional
+commonName = supplied
+emailAddress = optional
+
+####################################################################
+[ signing_req ]
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid,issuer
+
+basicConstraints = CA:FALSE
+keyUsage = digitalSignature, keyEncipherment
+EOF
+
+  echo "$CA_NAME Initialized."
   exit 0
 fi
 
@@ -40,6 +128,9 @@ USAGE
 
   exit 1
 fi
+
+DOMAIN=$1
+shift
 
 openssl genrsa -out $DOMAIN.privkey.pem 2048
 cat > $DOMAIN.cfg <<EOF
