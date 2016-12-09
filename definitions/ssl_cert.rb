@@ -19,7 +19,7 @@ define :ssl_cert, name: nil, owner: nil do
 
     %w{fullchain.pem privkey.pem}.each do |file|
       cookbook_file "#{cert_path}/#{file}" do
-        source "#{domain}.#{file}"
+        source "#{site}.#{file}"
         owner user
         mode "0640"
       end
