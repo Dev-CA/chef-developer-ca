@@ -26,3 +26,5 @@ license "MIT"
   supports os
 end
 
+depends "certbot"
+

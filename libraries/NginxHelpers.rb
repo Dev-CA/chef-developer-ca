@@ -24,16 +24,8 @@ module NginxHelpers
     %[ssl_protocols SSLv3 TLSv1 TLSv1.1 TLSv1.2; ssl_ciphers '#{max_compatibility_cipher_suite}';]
   end
 
-  def certs_dir(use_letsencrypt)
-    if use_letsencrypt
-      "/etc/letsencrypt/live/"
-    else
-      "/etc/developer-ca/"
-    end
-  end
-
-  def ssl_cert(site_name, use_letsencrypt: true)
-    site_certs_dir = certs_dir(use_letsencrypt) + site_name
+  def ssl_cert(site_name)
+    site_certs_dir = "/etc/developer-ca/" + site_name
     %[ssl_certificate #{site_certs_dir}/fullchain.pem; ssl_certificate_key #{site_certs_dir}/privkey.pem;]
   end
 end
