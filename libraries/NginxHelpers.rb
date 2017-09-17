@@ -24,9 +24,13 @@ module NginxHelpers
     %[ssl_protocols SSLv3 TLSv1 TLSv1.1 TLSv1.2; ssl_ciphers '#{max_compatibility_cipher_suite}';]
   end
 
+  def letsencrypt_locations(site_name)
+    "location ^~ /.well-known/acme-challenge/ { root /var/www/letsencrypt/#{site_name}/; }"
+  end
+
   def ssl_cert(site_name)
     site_certs_dir = "/etc/developer-ca/" + site_name
-    %[ssl_certificate #{site_certs_dir}/fullchain.pem; ssl_certificate_key #{site_certs_dir}/privkey.pem;]
+    %[ssl_certificate #{site_certs_dir}/fullchain.pem; ssl_certificate_key #{site_certs_dir}/privkey.pem; ]
   end
 end
 
